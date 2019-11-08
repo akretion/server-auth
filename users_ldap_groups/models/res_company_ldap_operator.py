@@ -21,10 +21,15 @@ class ResCompanyLdapOperator(models.AbstractModel):
 
     def contains(self, ldap_entry, mapping):
         return mapping.ldap_attribute in ldap_entry[1] and \
-            mapping.value in map(
+            (mapping.value in map(
                 lambda x: x.decode(),
                 ldap_entry[1][mapping.ldap_attribute]
-            )
+            ) or \
+            isinstance(ldap_entry[1][mapping.ldap_attribute], list) and \
+            any(mapping.value in item for item in map(
+                lambda x: x.decode(),
+                ldap_entry[1][mapping.ldap_attribute]
+            )))
 
     def equals(self, ldap_entry, mapping):
         return mapping.ldap_attribute in ldap_entry[1] and \
