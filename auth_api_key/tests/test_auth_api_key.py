@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright 2018 ACSONE SA/NV
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
-from odoo.tests.common import TransactionCase
-from odoo.addons.server_environment import serv_config
-from odoo.exceptions import ValidationError, AccessError
+from openerp.tests.common import TransactionCase
+from openerp.addons.server_environment import serv_config
+from openerp.exceptions import ValidationError, AccessError
 
 
 class TestAuthApiKey(TransactionCase):

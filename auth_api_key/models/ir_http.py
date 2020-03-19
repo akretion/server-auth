@@ -6,9 +6,9 @@
 
 import logging
 
-from odoo.http import request
-from odoo import models
-from odoo.exceptions import AccessDenied
+from openerp.http import request
+from openerp import models
+from openerp.exceptions import AccessDenied
 
 
 _logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class IrHttp(models.AbstractModel):
             if uid:
                 # reset _env on the request since we change the uid...
                 # the next call to env will instantiate an new
-                # odoo.api.Environment with the user defined on the
+                # openerp.api.Environment with the user defined on the
                 # auth.api_key
                 request._env = None
                 request.uid = uid
