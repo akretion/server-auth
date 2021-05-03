@@ -1,6 +1,8 @@
 # Copyright 2018 ACSONE SA/NV
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
+import secrets
+
 from odoo import _, api, fields, models, tools
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tools import consteq
@@ -24,8 +26,13 @@ class AuthApiKey(models.Model):
         help="""The user used to process the requests authenticated by
         the api key""",
     )
+    scope = fields.Selection(selection="_selection_scope")
 
     _sql_constraints = [("name_uniq", "unique(name)", "Api Key name must be unique.")]
+
+    @api.model
+    def _selection_scope(self):
+        return []
 
     def _server_env_section_name(self):
         """Name of the section in the configuration files
@@ -48,23 +55,26 @@ class AuthApiKey(models.Model):
         return api_key_fields
 
     @api.model
-    def _retrieve_api_key(self, key):
-        return self.browse(self._retrieve_api_key_id(key))
+    def _retrieve_api_key(self, key, scope=False):
+        return self.browse(self._retrieve_api_key_id(key, scope=scope))
 
     @api.model
     @tools.ormcache("key")
-    def _retrieve_api_key_id(self, key):
+    def _retrieve_api_key_id(self, key, scope=False):
         if not self.env.user.has_group("base.group_system"):
             raise AccessError(_("User is not allowed"))
-        for api_key in self.search([]):
+        domain = []
+        if scope:
+            domain = [("scope", "=", scope)]
+        for api_key in self.search(domain):
             if consteq(key, api_key.key):
                 return api_key.id
         raise ValidationError(_("The key %s is not allowed") % key)
 
     @api.model
     @tools.ormcache("key")
-    def _retrieve_uid_from_api_key(self, key):
-        return self._retrieve_api_key(key).user_id.id
+    def _retrieve_uid_from_api_key(self, key, scope=False):
+        return self._retrieve_api_key(key, scope=scope).user_id.id
 
     def _clear_key_cache(self):
         self._retrieve_api_key_id.clear_cache(self.env[self._name])
@@ -82,3 +92,7 @@ class AuthApiKey(models.Model):
         if "key" in vals or "user_id" in vals:
             self._clear_key_cache()
         return True
+
+    def generate_api_key(self):
+        for record in self:
+            record.key = secrets.token_hex(10)

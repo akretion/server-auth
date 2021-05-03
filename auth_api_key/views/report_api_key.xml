@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="action_report_api_key_barcode" model="ir.actions.report">
+        <field name="name">Api Key Barcode</field>
+        <field name="model">auth.api.key</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">auth_api_key.report_api_key_barcode</field>
+        <field name="report_file">auth_api_key.report_api_key_barcode</field>
+        <field name="print_report_name">'Key - %s' % object.name</field>
+        <field name="binding_model_id" ref="auth_api_key.model_auth_api_key" />
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
