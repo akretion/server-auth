@@ -19,9 +19,17 @@ class IrHttp(models.AbstractModel):
     def _auth_method_api_key(cls):
         headers = request.httprequest.environ
         api_key = headers.get("HTTP_API_KEY")
+        url = headers.get("PATH_INFO")
+        scope = False
+        if url:
+            split_url = url.split("/")
+            if len(split_url) >= 2:
+                scope = split_url[1]
         if api_key:
             request.uid = 1
-            auth_api_key = request.env["auth.api.key"]._retrieve_api_key(api_key)
+            auth_api_key = request.env["auth.api.key"]._retrieve_api_key(
+                api_key, scope=scope
+            )
             if auth_api_key:
                 # reset _env on the request since we change the uid...
                 # the next call to env will instantiate an new
