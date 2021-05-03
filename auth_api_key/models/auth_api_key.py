@@ -64,8 +64,6 @@ class AuthApiKey(models.Model):
         if not self.env.user.has_group("base.group_system"):
             raise AccessError(_("User is not allowed"))
         domain = []
-        if scope:
-            domain = [("scope", "=", scope)]
         for api_key in self.search(domain):
             if api_key.key and consteq(key, api_key.key):
                 return api_key.id
