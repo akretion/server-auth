@@ -69,7 +69,7 @@ class AuthApiKey(models.Model):
             if scope in available_scopes:
                 domain = [("scope", "=", scope)]
         for api_key in self.search(domain):
-            if consteq(key, api_key.key):
+            if api_key.key and consteq(key, api_key.key):
                 return api_key.id
         raise ValidationError(_("The key %s is not allowed") % key)
 
