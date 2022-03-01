@@ -63,7 +63,13 @@ class TestAuthMethod(TransactionCase):
             payload["nbf"] = nbf
         return jwt.encode(payload, key=key, algorithm="HS256")
 
-    def _create_validator(self, name, audience="me", partner_id_required=False):
+    def _create_validator(
+        self,
+        name,
+        audience="me",
+        partner_id_required=False,
+        partner_id_strategy="email",
+    ):
         return self.env["auth.jwt.validator"].create(
             dict(
                 name=name,
@@ -73,15 +79,24 @@ class TestAuthMethod(TransactionCase):
                 audience=audience,
                 issuer="http://the.issuer",
                 user_id_strategy="static",
-                partner_id_strategy="email",
+                partner_id_strategy=partner_id_strategy,
                 partner_id_required=partner_id_required,
             )
         )
 
     @contextlib.contextmanager
-    def _commit_validator(self, name, audience="me", partner_id_required=False):
+    def _commit_validator(
+        self,
+        name,
+        audience="me",
+        partner_id_required=False,
+        partner_id_strategy="email",
+    ):
         validator = self._create_validator(
-            name=name, audience=audience, partner_id_required=partner_id_required
+            name=name,
+            audience=audience,
+            partner_id_strategy=partner_id_strategy,
+            partner_id_required=partner_id_required,
         )
 
         def _mocked_get_validator_by_name(self, validator_name):
@@ -179,6 +194,51 @@ class TestAuthMethod(TransactionCase):
             with self._mock_request(authorization=authorization):
                 with self.assertRaises(UnauthorizedPartnerNotFound):
                     self.env["ir.http"]._auth_method_jwt_validator6()
+
+    def test_partner_id_strategy_email_create_partner_existing(self):
+        partner = self.env["res.partner"].search([("email", "!=", False)])[0]
+        with self._commit_validator("validator6", partner_id_strategy="email_create"):
+            authorization = "Bearer " + self._create_token(email=partner.email)
+            with self._mock_request(authorization=authorization) as request:
+                self.env["ir.http"]._auth_method_jwt_validator6()
+                self.assertEqual(request.jwt_partner_id, partner.id)
+
+    def test_partner_id_strategy_email_create_partner_not_existing(self):
+        with self._commit_validator("validator6", partner_id_strategy="email_create"):
+            authorization = "Bearer " + self._create_token(
+                email="notyetanemail@example.com"
+            )
+            with self._mock_request(authorization=authorization) as request:
+                self.env["ir.http"]._auth_method_jwt_validator6()
+                self.assertTrue(request.jwt_partner_id)
+                partner = self.env["res.partner"].browse(request.jwt_partner_id)
+                self.assertEqual(partner.email, "notyetanemail@example.com")
+                self.assertEqual(partner.auth_jwt_email, "notyetanemail@example.com")
+                self.assertTrue(partner.created_by_jwt)
+
+    def test_partner_id_strategy_email_changed_on_partner(self):
+        partner = self.env["res.partner"].search([("email", "!=", False)])[0]
+        original_email = partner.email
+        partner.auth_jwt_email = original_email
+        partner.email = "yetanotheremail@example.com"
+
+        with self._commit_validator("validator6"):
+            authorization = "Bearer " + self._create_token(email=original_email)
+            with self._mock_request(authorization=authorization) as request:
+                self.env["ir.http"]._auth_method_jwt_validator6()
+                self.assertEqual(request.jwt_partner_id, partner.id)
+
+    def test_partner_id_strategy_email_changed_on_partner_for_another_email(self):
+        partner = self.env["res.partner"].search([("email", "!=", False)])[0]
+        original_email = partner.email
+        partner.auth_jwt_email = original_email
+        partner.email = "yetanotheremail@example.com"
+
+        with self._commit_validator("validator6"):
+            authorization = "Bearer " + self._create_token(email=partner.email)
+            with self._mock_request(authorization=authorization) as request:
+                self.env["ir.http"]._auth_method_jwt_validator6()
+                self.assertFalse(request.jwt_partner_id)
 
     def test_get_validator(self):
         AuthJwtValidator = self.env["auth.jwt.validator"]
