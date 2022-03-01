@@ -200,7 +200,7 @@ class AuthJwtValidator(models.Model):
                     [("email", "=", email), ("auth_jwt_email", "=", False)]
                 )
 
-                if partner:
+                if len(partner) == 1:
                     partner.auth_jwt_email = email
 
             if not len(partner) and self.partner_id_strategy == "email_create":
