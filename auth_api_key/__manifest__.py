@@ -10,10 +10,10 @@
     "author": "ACSONE SA/NV,Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/server-auth",
     "development_status": "Production/Stable",
-    "depends": ["base_setup"],
     "data": [
         "security/ir.model.access.csv",
+        "report/report_key_barcode.xml",
         "views/auth_api_key.xml",
-        "views/res_config_settings.xml",
+        "views/report_api_key.xml",
     ],
 }

@@ -1,6 +1,8 @@
 # Copyright 2018 ACSONE SA/NV
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
 
+import secrets
+
 from odoo import _, api, fields, models, tools
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tools import consteq
@@ -77,3 +79,7 @@ class AuthApiKey(models.Model):
         if "key" in vals or "user_id" in vals:
             self._clear_key_cache()
         return True
+
+    def generate_api_key(self):
+        for record in self:
+            record.key = secrets.token_hex(10)

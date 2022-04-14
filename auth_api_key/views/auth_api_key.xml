@@ -7,6 +7,13 @@
         <field name="model">auth.api.key</field>
         <field name="arch" type="xml">
             <form create="false" edit="false">
+                <header>
+                    <button
+                        name="generate_api_key"
+                        type="object"
+                        string="Generate Api Key"
+                    />
+                </header>
                 <sheet>
                   <field name="active" invisible="1" />
                   <widget
