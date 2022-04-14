@@ -6,7 +6,11 @@
         <field name="inherit_id" ref="base.view_partner_form" />
         <field name="arch" type="xml">
             <field name="website" position="before">
-                <field name="auth_jwt_email" widget="email" />
+                <field
+                    name="auth_jwt_email"
+                    widget="email"
+                    groups="base.group_no_one"
+                />
             </field>
         </field>
     </record>
