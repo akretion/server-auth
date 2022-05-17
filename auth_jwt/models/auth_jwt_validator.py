@@ -187,6 +187,16 @@ class AuthJwtValidator(models.Model):
             }
         )
 
+    def _get_partner_from_email(self, email):
+        partner = self.env["res.partner"].search([("auth_jwt_email", "=", email)])
+
+        if not len(partner):
+            partner = self.env["res.partner"].search(
+                [("email", "=", email), ("auth_jwt_email", "=", False)]
+            )
+
+        return partner
+
     def _get_partner_id(self, payload):
         # override for additional strategies
         if self.partner_id_strategy in ["email", "email_create"]:
@@ -194,14 +204,8 @@ class AuthJwtValidator(models.Model):
             if not email:
                 _logger.debug("JWT payload does not have an email claim")
                 return
-            partner = self.env["res.partner"].search([("auth_jwt_email", "=", email)])
-            if not len(partner):
-                partner = self.env["res.partner"].search(
-                    [("email", "=", email), ("auth_jwt_email", "=", False)]
-                )
 
-                if len(partner) == 1:
-                    partner.auth_jwt_email = email
+            partner = self._get_partner_from_email(email)
 
             if not len(partner) and self.partner_id_strategy == "email_create":
                 partner = self._create_partner_from_payload(payload)
@@ -209,6 +213,10 @@ class AuthJwtValidator(models.Model):
             if len(partner) != 1:
                 _logger.debug("%d partners found for email %s", len(partner), email)
                 return
+
+            if not partner.auth_jwt_email:
+                partner.auth_jwt_email = email
+
             return partner.id
 
     def _get_and_check_partner_id(self, payload):
