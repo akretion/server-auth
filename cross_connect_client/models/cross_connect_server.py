@@ -90,6 +90,10 @@ class CrossConnectServer(models.Model):
     def _request(self, method, url, headers=None, data=None):
         headers = headers or {}
         headers["api-key"] = self.api_key
+        if not self.api_key:
+            raise UserError(
+                self.env._("Missing api key in Cross Connect Servers to continue")
+            )
         response = requests.request(
             method,
             self._absolute_url_for(url),
