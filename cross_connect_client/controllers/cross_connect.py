@@ -1,6 +1,8 @@
 # Copyright 2024 Akretion (http://www.akretion.com).
 # @author Florian Mounier <florian.mounier@akretion.com>
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+import werkzeug
+
 from odoo import _
 from odoo.exceptions import UserError
 from odoo.http import Controller, request, route
@@ -23,4 +25,4 @@ class CrossConnectController(Controller):
             raise UserError(_("Server not found"))
 
         url = server._get_cross_connect_url(**params)
-        return request.redirect(url, local=False)
+        return werkzeug.utils.redirect(url, code=303)
