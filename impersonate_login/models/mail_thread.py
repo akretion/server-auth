@@ -13,13 +13,12 @@ class MailThread(models.AbstractModel):
         self, author_id=None, email_from=None, raise_on_email=True
     ):
         if request and request.session.impersonate_from_uid:
-            author = self.env["res.users"].browse(request.session.uid).partner_id
+            users = self.env["res.users"].sudo()
+            author = users.browse(request.session.uid).partner_id
             if author_id == author.id or author_id is None:
-                impersonate_from_author = (
-                    self.env["res.users"]
-                    .browse(request.session.impersonate_from_uid)
-                    .partner_id
-                )
+                impersonate_from_author = users.browse(
+                    request.session.impersonate_from_uid
+                ).partner_id
                 email = impersonate_from_author.email_formatted
                 return impersonate_from_author.id, email
 

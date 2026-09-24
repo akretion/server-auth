@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_back_to_origin" inherit_id="portal.user_dropdown">
+        <xpath expr="//*[@id='o_logout_divider']" position="before">
+            <form
+                t-if="request.session.impersonate_from_uid"
+                action="/impersonate_login/back_to_origin"
+                method="post"
+            >
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    t-att-value="request.csrf_token()"
+                />
+                <button
+                    type="submit"
+                    role="menuitem"
+                    id="o_impersonate_back"
+                    class="dropdown-item ps-3"
+                >
+                    <i class="fa fa-fw fa-undo me-1 small text-primary text-primary-emphasis"/>
+                    Back to Original User
+                </button>
+            </form>
+        </xpath>
+    </template>
+</odoo>

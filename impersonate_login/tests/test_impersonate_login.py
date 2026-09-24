@@ -4,6 +4,9 @@
 import json
 from uuid import uuid4
 
+from lxml import html
+
+from odoo import Command
 from odoo.tests import HttpCase, tagged
 from odoo.tools import mute_logger
 
@@ -337,3 +340,80 @@ class TestImpersonateLogin(HttpCase):
             "You cannot impersonate users with "
             "'Administration: Settings' access rights.",
         )
+
+
+@tagged("post_install", "-at_install")
+class TestPortalImpersonationReturn(HttpCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.admin_user = cls.env.ref("base.user_admin")
+
+    def _impersonate_user(self, user):
+        response = self.url_open(
+            "/web/dataset/call_button",
+            data=json.dumps(
+                {
+                    "params": {
+                        "model": "res.users",
+                        "method": "impersonate_login",
+                        "args": [user.id],
+                        "kwargs": {},
+                    },
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(response.status_code, 200)
+        return response.json()
+
+    def _get_session_info(self):
+        response = self.url_open(
+            "/web/session/get_session_info",
+            data=json.dumps({"jsonrpc": "2.0", "method": "call", "id": str(uuid4())}),
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(response.status_code, 200)
+        return response.json()
+
+    def test_portal_user_can_return_to_original_user(self):
+        portal_user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Portal Impersonation Test",
+                    "login": "portal_impersonation_test",
+                    "password": "portal_impersonation_test",
+                    "groups_id": [Command.set([self.env.ref("base.group_portal").id])],
+                }
+            )
+        )
+
+        self.authenticate(portal_user.login, portal_user.login)
+        portal_page = self.url_open("/my")
+        self.assertEqual(portal_page.status_code, 200)
+        self.assertNotIn(
+            "/impersonate_login/back_to_origin",
+            portal_page.text,
+        )
+
+        self.authenticate(user="admin", password="admin")
+        self._impersonate_user(portal_user)
+        portal_page = self.url_open("/my")
+        self.assertEqual(portal_page.status_code, 200)
+        document = html.fromstring(portal_page.content)
+        return_forms = document.xpath(
+            "//form[@action='/impersonate_login/back_to_origin']"
+        )
+        self.assertEqual(len(return_forms), 1)
+        csrf_token = return_forms[0].xpath(".//input[@name='csrf_token']/@value")[0]
+
+        response = self.url_open(
+            "/impersonate_login/back_to_origin",
+            data={"csrf_token": csrf_token},
+        )
+        self.assertEqual(response.status_code, 200)
+        session_info = self._get_session_info()["result"]
+        self.assertEqual(session_info["username"], self.admin_user.login)
+        self.assertFalse(session_info["impersonate_from_uid"])

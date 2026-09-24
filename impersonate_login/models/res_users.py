@@ -16,7 +16,7 @@ class Users(models.Model):
     _inherit = "res.users"
 
     def _get_partner_name(self, user_id):
-        return self.env["res.users"].browse(user_id).partner_id.name
+        return self.env["res.users"].sudo().browse(user_id).partner_id.name
 
     def _is_impersonate_user(self):
         self.ensure_one()
@@ -95,7 +95,6 @@ class Users(models.Model):
                 action["views"] = [[self.env.ref("base.view_users_tree").id, "list"]]
                 action["domain"] = [
                     ("id", "!=", self.env.user.id),
-                    ("share", "=", False),
                 ]
                 action["target"] = "new"
                 return action
@@ -126,7 +125,12 @@ class Users(models.Model):
                 )
 
             # reload the client; open the first available root menu
-            menu = self.env["ir.ui.menu"].search([("parent_id", "=", False)])[:1]
+            menu_uid = from_uid or self.env.uid
+            menu = (
+                self.env["ir.ui.menu"]
+                .with_user(menu_uid)
+                .search([("parent_id", "=", False)])[:1]
+            )
             return {
                 "type": "ir.actions.client",
                 "tag": "reload",

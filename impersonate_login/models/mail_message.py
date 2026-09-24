@@ -30,6 +30,7 @@ class Message(models.Model):
             if request and request.session.impersonate_from_uid:
                 rec.impersonated_author_id = (
                     self.env["res.users"]
+                    .sudo()
                     .browse(request.session.impersonate_from_uid)
                     .partner_id.id
                 )
@@ -46,7 +47,10 @@ class Message(models.Model):
                 and rec.impersonated_author_id
             ):
                 current_partner = (
-                    self.env["res.users"].browse(request.session.uid).partner_id
+                    self.env["res.users"]
+                    .sudo()
+                    .browse(request.session.uid)
+                    .partner_id
                 )
                 additional_info = _("Logged in as {}").format(
                     html_escape(current_partner.name)
@@ -65,7 +69,10 @@ class Message(models.Model):
                 and rec.impersonated_author_id
             ):
                 current_partner = (
-                    self.env["res.users"].browse(request.session.uid).partner_id
+                    self.env["res.users"]
+                    .sudo()
+                    .browse(request.session.uid)
+                    .partner_id
                 )
                 additional_info = _("Logged in as {}").format(
                     html_escape(current_partner.name)
